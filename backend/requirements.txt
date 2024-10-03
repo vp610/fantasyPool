@@ -1,2 +1,8 @@
 Flask
 Flask-PyMongo
+Flask-SQLAlchemy
+psycopg2-binary
+requests
+apscheduler
+python-dotenv
+werkzeug
