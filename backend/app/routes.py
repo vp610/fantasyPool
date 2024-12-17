@@ -1,20 +1,10 @@
 from flask import Blueprint, request, jsonify, current_app
 from app.models import Player, Team, User
+from app.utility.headers import get_headers
 from app import db
 import requests
 
 main = Blueprint('main', __name__)
-
-#########################################################################################
-################################### Utility functions ###################################
-#########################################################################################
-
-def get_headers():
-    return {
-        'x-rapidapi-key': current_app.config['X_RAPIDAPI_KEY'],
-        'x-rapidapi-host': current_app.config['X_RAPIDAPI_HOST']
-    }
-
 
 #########################################################################################
 ################################# Authentication Routes #################################
@@ -61,23 +51,22 @@ def get_teams():
     teams = Team.query.all()
     
     if teams:
-        team_names = [{"name": team.name, "teamId": team.teamId} for team in teams]
+        team_names = [{"name": team.name, "teamId": team.teamId, "totalGames": team.totalGames, "totalWins": team.totalWins} for team in teams]
         return jsonify(team_names), 200
     else:
         # If not found, fetch from the API
         data = fetch_teams()
-        # if data.get('status_code') == 200:
-            # Store teams in the database and return them
-        print("DATA:", data)
+        
+        # Store teams in the database and return them
         for team_data in data['list']:
-            print(team_data)
+            # print(team_data)
             if team_data['teamName'] not in ["Test Teams", "Associate Teams"]:
                 team = Team(name=team_data['teamName'], teamId=team_data['teamId'])
                 db.session.add(team)
         db.session.commit()
 
         teams = Team.query.all()
-        team_names = [team for team in teams]
+        team_names = [{"id": team.id, "name": team.name, "teamId": team.teamId, "totalGames": team.totalGames, "totalWins": team.totalWins} for team in teams]
         return jsonify(team_names), 200
         # else:
         #     return jsonify({"error": "Failed to fetch teams"}), 500
@@ -147,6 +136,7 @@ def select_players():
 
 
 
+
 #########################################################################################
 ################################## ENDPOINTS TO API #####################################
 #########################################################################################
@@ -155,10 +145,8 @@ def select_players():
 
 def fetch_teams():
     api_url = f"{current_app.config['ENDPOINT_URL']}/teams/v1/international"
-    headers = get_headers()
-    print(headers)
     response = requests.get(api_url, headers=get_headers())
-    print(response)
+
     # if response.status_code == 200:
     data = response.json()
     return data
@@ -167,25 +155,42 @@ def fetch_teams():
 
 def fetch_players_to_db():
     teams_response = get_teams()
-    teams = teams_response.get_json()  # Use get_json() to parse the response
+    teams = teams_response[0].get_json() 
+
+    # print("Teams: ", teams.get_json())
+    print("before if")
+    if not isinstance(teams, list):
+        try:
+            teams = list(teams)  
+        except TypeError:
+            print("Error in fetching teams")
+            return 1
+    print("after if")
 
     for team in teams:
+        print("Team: ", team)
         api_url = f"{current_app.config['ENDPOINT_URL']}/teams/v1/{team['teamId']}/players"
         response = requests.get(api_url, headers=get_headers())
         
         if response.status_code == 200:
             data = response.json()
+            print("data: ", data)
+            role = ""
             for player in data["player"]:
-                role = ""
+                # print("Player: ", player)
                 if player["name"] == "BATSMEN":
                     role = "Batsmen"
                 elif player["name"] == "BOWLER":
                     role = "Bowler"
-                elif player["name"] == "ALL-ROUNDER":
-                    role = "All-Rounder"
+                elif player["name"] == "ALL ROUNDER":
+                    role = "All Rounder"
+                elif player["name"] == "WICKET KEEPER":
+                    role = "Wicket Keeper"
                 else:
+                    print("player created")
                     new_player = Player(name=player["name"], playerId=player["id"], role=role, teamId=team['teamId'])
                     db.session.add(new_player)
+            db.session.commit()
         else:
             return 1
         

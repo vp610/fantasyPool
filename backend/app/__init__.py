@@ -1,51 +1,48 @@
-from flask import Flask, current_app
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
-import requests
 
 # Initialize the SQLAlchemy instance here
 db = SQLAlchemy()
 
-def fetch_match_data():
-    # Fetch data from the API
-    api_url = "https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/"
-    response = requests.get(api_url, headers=current_app["headers"])
-
-    if response.status_code == 200:
-        data = response.json()
-        # Process and store data in the SQLite database
-        for team_data in data['teams']:
-            team = Team.query.filter_by(name=team_data['name']).first()
-            if not team:
-                team = Team(name=team_data['name'])
-                db.session.add(team)
-        
-        for player_data in data['players']:
-            player = Player.query.filter_by(name=player_data['name']).first()
-            if not player:
-                player = Player(name=player_data['name'])
-                db.session.add(player)
-
-        db.session.commit()
-
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config) 
-    
-    db.init_app(app) 
-    
-    from app.models import Team, Player
-    
-    with app.app_context():
-        db.create_all()  # Create the database tables
-    
-    # Start cron job scheduler
-    scheduler = BackgroundScheduler()
-    # scheduler.add_job(func=fetch_match_data, trigger="interval", hours=6)
-    # scheduler.start()
-    
+    app.config.from_object(Config)
+
+    # Initialize db with the app
+    db.init_app(app)
+
+    # Register the main blueprint
     from app.routes import main
     app.register_blueprint(main)
+
+    # Initialize the database and populate if necessary
+    with app.app_context():
+        from app.models import Team, Player, User, user_teams, user_players, user_pools
         
+        # Drop and create all tables (careful with this in production)
+        # db.drop_all()
+        db.create_all()  # Create the database tables
+
+        # Import and call get_teams and get_players functions
+        from app.routes import get_teams, get_players  # Import here to avoid circular imports
+
+        # Check and populate teams and players if necessary
+        if Team.query.count() == 0:
+            get_teams()  # Fetch teams if not already in the DB
+        
+        if Player.query.count() == 0:
+            get_players()  # Fetch players if not already in the DB
+
+    # Initialize the scheduler
+    from app.cron_job.cron_jobs import fetch_match_data
+
+    scheduler = BackgroundScheduler()
+    # Pass app instance to the cron job
+    scheduler.add_job(func=lambda: fetch_match_data(app), trigger="interval", seconds=25200)
+    scheduler.start()
+
+    print("Scheduler has started!")  # Confirm scheduler starts
+
     return app
