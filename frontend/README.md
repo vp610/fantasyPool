@@ -1,46 +1,59 @@
-# Getting Started with Create React App
+# README.md
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Frontend Project with Auth0 Authentication
 
-## Available Scripts
+This project is a React application that provides a landing page for users to log in or register using Auth0 for authentication.
 
-In the project directory, you can run:
+## Project Structure
 
-### `npm start`
+```
+frontend-project
+├── public
+│   ├── index.html          # Main HTML file
+├── src
+│   ├── components
+│   │   ├── Auth
+│   │   │   ├── Login.tsx   # Login component
+│   │   │   ├── Register.tsx # Registration component
+│   │   └── LandingPage.tsx  # Landing page component
+│   ├── App.tsx             # Main application component
+│   ├── index.tsx           # Entry point for the React application
+│   └── auth_config.json     # Auth0 configuration settings
+├── package.json             # npm configuration file
+├── tsconfig.json            # TypeScript configuration file
+└── README.md                # Project documentation
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Setup Instructions
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+1. **Clone the repository:**
+   ```
+   git clone <repository-url>
+   cd frontend-project
+   ```
 
-### `npm test`
+2. **Install dependencies:**
+   ```
+   npm install
+   ```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+3. **Configure Auth0:**
+   - Create an Auth0 account and set up a new application.
+   - Update the `src/auth_config.json` file with your Auth0 domain and client ID.
 
-### `npm run build`
+4. **Run the application:**
+   ```
+   npm start
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+5. **Access the application:**
+   Open your browser and navigate to `http://localhost:3000` to view the landing page.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Usage
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Users can choose to log in or register from the landing page.
+- The application uses Auth0 for secure authentication.
 
-### `npm run eject`
+## License
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+This project is licensed under the MIT License.

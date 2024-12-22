@@ -1,154 +1,99 @@
-from flask import current_app
-from app import db
-from app.utility.headers import get_headers
-from app.models import Team, Player
 import requests
+from flask import current_app
+from app.utility.headers import get_headers
 
-def fetch_match_data(app):
-    with app.app_context():  # Use the app instance to push the context
-        print("Fetching match data")
-        api_url = f"{current_app.config['ENDPOINT_URL']}/matches/v1/recent"
-        response = requests.get(api_url, headers=get_headers())
-        data = response.json()
+def fetch_match_data(supabase_service):
+    print("Fetching match data")
+    api_url = f"{current_app.config['ENDPOINT_URL']}/matches/v1/recent"
+    response = requests.get(api_url, headers=get_headers())
+    data = response.json()
 
-        for type_match in data['typeMatches']:
-            if type_match["matchType"] == "International":
-                series_matches = type_match["seriesMatches"]
-                for series_match in series_matches:
-                    if "seriesAdWrapper" in series_match:
-                        series_ad_wrapper = series_match["seriesAdWrapper"]
-                        for match in series_ad_wrapper["matches"]:  
-                            if match["matchInfo"]["state"] == "Complete":
-                                match_id = match["matchInfo"]["matchId"]
-                                team1 = match["matchInfo"]["team1"]
-                                team2 = match["matchInfo"]["team2"]
-                                result = match["matchInfo"]["stateTitle"]
-                                winner_team_id = 0
-                                if team1["teamSName"] in result:
-                                    winner_team_id = team1["teamId"]
-                                else:
-                                    winner_team_id = team2["teamId"]
+    for type_match in data['typeMatches']:
+        if type_match["matchType"] == "International":
+            for series_match in type_match["seriesMatches"]:
+                if "seriesAdWrapper" in series_match:
+                    for match in series_match["seriesAdWrapper"]["matches"]:
+                        if match["matchInfo"]["state"] == "Complete":
+                            match_id = match["matchInfo"]["matchId"]
+                            team1 = match["matchInfo"]["team1"]
+                            team2 = match["matchInfo"]["team2"]
+                            result = match["matchInfo"]["stateTitle"]
 
-                                team1 = Team.query.filter_by(teamId=team1["teamId"]).first()
-                                team2 = Team.query.filter_by(teamId=team2["teamId"]).first()
-                                if team1:
-                                    team1.totalGames += 1
-                                    if team1.teamId == winner_team_id:
-                                        team1.totalWins += 1
-                                if team2:
-                                    team2.totalGames += 1
-                                    if team2.teamId == winner_team_id:
-                                        team2.totalWins += 1
-                                db.session.commit()
-                                fetch_player_performance(match_id, team1, team2)
+                            winner_team_id = team1["teamId"] if team1["teamSName"] in result else team2["teamId"]
+                            loser_team_id = team2["teamId"] if team1["teamSName"] in result else team1["teamId"]
+
+                            # Update teams in Supabase
+                            teams = supabase_service.fetch_table("teams")
+                            for team in teams:
+                                if team["teamId"] == winner_team_id:
+                                    team["totalWins"] += 1
+                                    team["totalGames"] += 1
+                                elif team["teamId"] == loser_team_id:
+                                    team["totalGames"] += 1
+                            supabase_service.update_table("teams", {}, teams)
+
+                            fetch_player_performance(supabase_service, match_id, team1, team2)
 
 
-def fetch_player_performance(match_id, team1, team2):
+def fetch_player_performance(supabase_service, match_id, team1, team2):
     api_url = f"{current_app.config['ENDPOINT_URL']}/mcenter/v1/{match_id}/scard"
     response = requests.get(api_url, headers=get_headers())
     data = response.json()
 
-    if (data['isMatchComplete'] == False):
+    if not data.get('isMatchComplete', False):
         return
 
     scorecard = data["scoreCard"]
+    team1_scorecard = scorecard[0] if scorecard[0]['batTeamDetails']['batTeamId'] == team1["teamId"] else scorecard[1]
+    team2_scorecard = scorecard[0] if scorecard[0]['batTeamDetails']['batTeamId'] == team2["teamId"] else scorecard[1]
 
-    # Determine which scorecard belongs to which team
-    team1Scorecard = scorecard[0] if scorecard[0]['batTeamDetails']['batTeamId'] == team1.teamId else scorecard[1]
-    team2Scorecard = scorecard[0] if scorecard[0]['batTeamDetails']['batTeamId'] == team2.teamId else scorecard[1]
+    process_team_performance(supabase_service, team1_scorecard, team1["teamId"], "Batsmen")
+    process_team_performance(supabase_service, team1_scorecard, team1["teamId"], "Bowler")
+    process_team_performance(supabase_service, team2_scorecard, team2["teamId"], "Batsmen")
+    process_team_performance(supabase_service, team2_scorecard, team2["teamId"], "Bowler")
 
-    # Process team 1's batting and bowling
-    process_team_performance(team1Scorecard, team1.teamId, "Batsmen")
-    process_team_performance(team1Scorecard, team1.teamId, "Bowler")
 
-    # Process team 2's batting and bowling
-    process_team_performance(team2Scorecard, team2.teamId, "Batsmen")
-    process_team_performance(team2Scorecard, team2.teamId, "Bowler")
+def process_team_performance(supabase_service, scorecard, team_id, role):
+    if role == "Batsmen":
+        batsmen_data = scorecard['batTeamDetails']['batsmenData']
+        for player_id, batsman in batsmen_data.items():
+            runs_scored = batsman['runs']
+            fifties = 1 if 50 <= runs_scored < 100 else 0
+            hundreds = 1 if runs_scored >= 100 else 0
 
-    # Commit all changes to the database
-    db.session.commit()
-
-def process_team_performance(scorecard, teamId, role):
-    if role == "Batsman":
-        teamBatTeamDetails = scorecard['batTeamDetails']
-        batsmenData = teamBatTeamDetails['batsmenData']
-
-        for b in batsmenData:
-            batsman = batsmenData[b]
-            playerId = batsman['batId']
-            runsScored = batsman['runs']
-            if runsScored >= 100:
-                hundreds = 1
-                fifties = 0
-            else:
-                hundreds = 0
-                if runsScored >= 50:
-                    fifties = 1
-                else:
-                    fifties = 0
-            
-            # Update or create player record
-            update_or_create_player(playerId, batsman['batName'], teamId, role, fifties, hundreds, isKeeper=batsman["isKeeper"])
-
+            update_or_create_player(supabase_service, player_id, batsman['batName'], team_id, role, fifties, hundreds, batsman.get("isKeeper", False))
     elif role == "Bowler":
-        teamBowlTeamDetails = scorecard['bowlTeamDetails']
-        print("++++++++++++++++++++++++++++++++++=====++++++++++++++++++++++++++++++")
-
-        bowlersData = teamBowlTeamDetails['bowlersData']
-
-        for b in bowlersData:
-            print("++++++++++++++++++++++++++++++++++=====++++++++++++++++++++++++++++++")
-            # print(bowler)
-            bowler = bowlersData[b]
-            playerId = bowler['bowlerId']
+        bowlers_data = scorecard['bowlTeamDetails']['bowlersData']
+        for player_id, bowler in bowlers_data.items():
             wickets = bowler['wickets']
-            if wickets >= 5:
-                fiveWickets = 1
-                threeWickets = 0
-            else:
-                fiveWickets = 0
-                if wickets >= 3:
-                    threeWickets = 1
-                else:
-                    threeWickets = 0
-            
-            # Update or create player record
-            update_or_create_player(playerId, bowler['bowlName'], teamId, role, threeWickets, fiveWickets)
+            three_wickets = 1 if 3 <= wickets < 5 else 0
+            five_wickets = 1 if wickets >= 5 else 0
 
-def update_or_create_player(playerId, name, teamId, role, stat1, stat2, isKeeper=False):
-    # Fetch player from the database
-    existing_player = Player.query.filter_by(playerId=playerId).first()
+            update_or_create_player(supabase_service, player_id, bowler['bowlName'], team_id, role, three_wickets, five_wickets)
+
+
+def update_or_create_player(supabase_service, player_id, name, team_id, role, stat1, stat2, is_keeper=False):
+    players = supabase_service.fetch_table("players")
+    existing_player = next((player for player in players if player["playerId"] == player_id), None)
 
     if existing_player:
-        # Update existing player's stats based on role
         if role == "Batsmen":
-            existing_player.numFifties += stat1
-            existing_player.numHundreds += stat2
+            existing_player["numFifties"] += stat1
+            existing_player["numHundreds"] += stat2
         elif role == "Bowler":
-            existing_player.threeWickets += stat1
-            existing_player.fiveWickets += stat2
-        existing_player.teamId = teamId  # Ensure the correct teamId is set
+            existing_player["threeWickets"] += stat1
+            existing_player["fiveWickets"] += stat2
+        existing_player["teamId"] = team_id
+        supabase_service.update_table("players", {"playerId": player_id}, existing_player)
     else:
-        # Create a new player record
-        ############ what if the player is an all rounder or a wicket keeper but appears in "batsmen" or "bowler" category for the scorecard how to handle that ############
-
-        if role == "Batsmen":
-            new_player = Player(
-                teamId=teamId,
-                playerId=playerId,
-                name=name,
-                role=role if not isKeeper else "Wicket Keeper",
-                numFifties=stat1,
-                numHundreds=stat2
-            )
-        elif role == "Bowler":
-            new_player = Player(
-                teamId=teamId,
-                playerId=playerId,
-                name=name,
-                role=role,
-                threeWickets=stat1,
-                fiveWickets=stat2
-            )
-        db.session.add(new_player)
-        db.session.commit()
+        new_player = {
+            "playerId": player_id,
+            "name": name,
+            "teamId": team_id,
+            "role": role if not is_keeper else "Wicket Keeper",
+            "numFifties": stat1 if role == "Batsmen" else 0,
+            "numHundreds": stat2 if role == "Batsmen" else 0,
+            "threeWickets": stat1 if role == "Bowler" else 0,
+            "fiveWickets": stat2 if role == "Bowler" else 0,
+        }
+        supabase_service.insert_into_table("players", new_player)

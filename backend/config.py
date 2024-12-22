@@ -17,3 +17,6 @@ class Config:
         'x-rapidapi-key': X_RAPIDAPI_KEY,
         'x-rapidapi-host': X_RAPIDAPI_HOST
     }
+
+    SUPABASE_URL = os.getenv('SUPABASE_URL')
+    SUPABASE_KEY = os.getenv('SUPABASE_KEY')

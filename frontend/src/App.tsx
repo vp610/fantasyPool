@@ -1,26 +1,22 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { Auth0Provider } from '@auth0/auth0-react';
+import LandingPage from './components/LandingPage';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+const App = () => {
+    return (
+        <Auth0Provider
+            domain={process.env?.REACT_APP_DOMAIN || ''}
+            clientId={process.env?.REACT_APP_CLIENTID || ''}
+            redirectUri={window.location.origin}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+            <Router>
+                <Switch>
+                    <Route path="/" component={LandingPage} />
+                </Switch>
+            </Router>
+        </Auth0Provider>
+    );
+};
 
 export default App;
