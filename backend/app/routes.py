@@ -1,80 +1,37 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, jsonify, current_app
 import requests
-from werkzeug.security import generate_password_hash, check_password_hash
 from app.utility.headers import get_headers
-from services.supabase_service import SupabaseService
+from supabase import create_client, Client
+from config import Config
 
-main = Blueprint('main', __name__)
-supabase_service = SupabaseService()
+api = Blueprint('api', __name__)
 
-@main.route('/signup', methods=['POST'])
-def signup():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
+# Initialize Supabase client
+supabase: Client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
 
-    # Check if user already exists
-    existing_user = supabase_service.fetch_table("users")
-    if any(user['username'] == username for user in existing_user):
-        return jsonify({"error": "User already exists"}), 400
+@api.route('/users', methods=['GET'])
+def get_users():
+    response = supabase.table('users').select('*').execute()
+    return jsonify(response.data)
 
-    # Create new user
-    hashed_password = generate_password_hash(password)
-    user_data = {"username": username, "password_hash": hashed_password}
-    supabase_service.insert_into_table("users", user_data)
-
-    return jsonify({"message": "User created successfully"}), 201
-
-@main.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    users = supabase_service.fetch_table("users")
-    user = next((u for u in users if u['username'] == username), None)
-
-    if user is None or not check_password_hash(user['password_hash'], password):
-        return jsonify({"error": "Invalid credentials"}), 400
-
-    return jsonify({"message": "Login successful"}), 200
-
-@main.route('/teams', methods=['GET'])
-def get_teams():
-    teams = supabase_service.fetch_table("teams")
-    return jsonify(teams), 200
-
-@main.route('/players', methods=['GET'])
+@api.route('/players', methods=['GET'])
 def get_players():
-    players = supabase_service.fetch_table("players")
-    return jsonify(players), 200
+    response = supabase.table('players').select('*').execute()
+    return jsonify(response.data)
 
-@main.route('/select-teams', methods=['POST'])
-def select_teams():
-    data = request.json
-    username = data.get('username')
-    selected_teams = data.get('teams')
+@api.route('/pools', methods=['GET'])
+def get_pools():
+    response = supabase.table('pools').select('*').execute()
+    return jsonify(response.data)
 
-    if len(selected_teams) != 3:
-        return jsonify({"error": "You must select exactly 3 teams"}), 400
-
-    user = supabase_service.fetch_table("users")
-    user = next((u for u in user if u['username'] == username), None)
-
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-
-    supabase_service.update_table("users", {"username": username}, {"teams_selected": ",".join(selected_teams)})
-
-    return jsonify({"message": "Teams selected successfully"}), 200
-
-
+@api.route('/teams', methods=['GET'])
+def get_teams():
+    response = supabase.table('teams').select('*').execute()
+    return jsonify(response.data)
 
 #########################################################################################
 ################################## ENDPOINTS TO API #####################################
 #########################################################################################
-
-
 
 def fetch_teams():
     api_url = f"{current_app.config['ENDPOINT_URL']}/teams/v1/international"

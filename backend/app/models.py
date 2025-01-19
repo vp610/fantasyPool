@@ -1,75 +1,68 @@
 from app import db
-from werkzeug.security import generate_password_hash, check_password_hash
 
-# Association table between User and Team
-user_teams = db.Table('user_teams',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('team_id', db.Integer, db.ForeignKey('teams.teamId'), primary_key=True)
-)
-
-# Association table between User and Player
-user_players = db.Table('user_players',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('player_id', db.Integer, db.ForeignKey('players.playerId'), primary_key=True)
-)
-
-# Association table between User and Pool
-user_pools = db.Table('user_pools',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('pool_id', db.Integer, db.ForeignKey('pools.id'), primary_key=True)
-)
-
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    points = db.Column(db.Integer, default=0)
-
-    # Many-to-many relationship with Team
-    teams_selected = db.relationship('Team', secondary=user_teams, lazy='subquery',
-                                     backref=db.backref('users', lazy=True))
-
-    # Many-to-many relationship with Player
-    players_selected = db.relationship('Player', secondary=user_players, lazy='subquery',
-                                       backref=db.backref('users', lazy=True))
-
-    # Many-to-many relationship with Pool
-    pools_participated = db.relationship('Pool', secondary=user_pools, lazy='subquery',
-                                         backref=db.backref('participants', lazy=True))
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-class Team(db.Model):
-    __tablename__ = 'teams'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    teamId = db.Column(db.Integer, unique=True, nullable=False)
-    totalGames = db.Column(db.Integer, default=0)
-    totalWins = db.Column(db.Integer, default=0)
-
-class Player(db.Model):
+class players(db.Model):
     __tablename__ = 'players'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.uuid, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    playerId = db.Column(db.Integer, nullable=False)
     teamId = db.Column(db.Integer, db.ForeignKey('teams.teamId'), nullable=False)
-    playerId = db.Column(db.Integer, unique=True, nullable=False)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    role = db.Column(db.String(100), nullable=False)
-    numFifties = db.Column(db.Integer, default=0)
-    numHundreds = db.Column(db.Integer, default=0)
-    threeWickets = db.Column(db.Integer, default=0)
-    fiveWickets = db.Column(db.Integer, default=0)
+    role = db.Column(db.String, nullable=False)
+    numFifties = db.Column(db.Integer, nullable=False, default=0)
+    numHundreds = db.Column(db.Integer, nullable=False, default=0)
+    threeWickets = db.Column(db.Integer, nullable=False, default=0)
+    fiveWickets = db.Column(db.Integer, nullable=False, default=0)
+    createdAt = db.Column(db.DateTime, nullable=False)
 
-class Pool(db.Model):
+class teams(db.Model):
+    __tablename__ = 'teams'
+    id = db.Column(db.uuid, primary_key=True)
+    teamId = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    createdAt = db.Column(db.DateTime, nullable=False)
+
+class users(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.uuid, primary_key=True)
+    authId = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, nullable=False)
+    username = db.Column(db.String, nullable=False)
+
+class team_results(db.Model):
+    __tablename__ = 'team_results'
+    id = db.Column(db.uuid, primary_key=True)
+    createdAt = db.Column(db.DateTime, nullable=False)
+    teamId = db.Column(db.Integer, db.ForeignKey('teams.teamId'), nullable=False)
+    poolId = db.Column(db.uuid, db.ForeignKey('pools.id'), nullable=False)
+    totalGames = db.Column(db.Integer, nullable=False, default=0)
+    totalWins = db.Column(db.Integer, nullable=False, default=0)
+    totalLosses = db.Column(db.Integer, nullable=False, default=0)
+    totalDraws = db.Column(db.Integer, nullable=False, default=0)
+
+class user_pools(db.Model):
+    __tablename__ = 'user_pools'
+    id = db.Column(db.uuid, primary_key=True)
+    createdAt = db.Column(db.DateTime, nullable=False)
+    userId = db.Column(db.uuid, db.ForeignKey('users.id'), nullable=False)
+    poolId = db.Column(db.uuid, db.ForeignKey('pools.id'), nullable=False)
+
+class user_pools(db.Model):
+    __tablename__ = 'user_pools'
+    createdAt = db.Column(db.DateTime, nullable=False)
+    userId = db.Column(db.uuid, db.ForeignKey('users.id'), nullable=False, primary_key=True)
+    poolId = db.Column(db.uuid, db.ForeignKey('pools.id'), nullable=False, primary_key=True)
+
+class pools(db.Model):
     __tablename__ = 'pools'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    totalPrize = db.Column(db.Integer, default=0)
-    totalParticipants = db.Column(db.Integer, default=0)
+    id = db.Column(db.uuid, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    startDate = db.Column(db.DateTime, nullable=False)
+    endDate = db.Column(db.DateTime, nullable=False)
+    participants = db.Column(db.Integer, default=0)
+    winner = db.Column(db.uuid, nullable=True)
 
-    # Relationship for the winner, assuming winner is a username
-    winner = db.Column(db.String(100), default='')
+class user_players(db.Model):
+    __tablename__ = 'user_players'
+    createdAt = db.Column(db.DateTime, nullable=False)
+    userId = db.Column(db.uuid, db.ForeignKey('users.id'), nullable=False, primary_key=True)
+    playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False, primary_key=True)
+    poolId = db.Column(db.uuid, db.ForeignKey('pools.id'), nullable=False, primary_key=True)

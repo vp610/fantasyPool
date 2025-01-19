@@ -1,22 +1,54 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import { Auth0Provider } from '@auth0/auth0-react';
-import LandingPage from './components/LandingPage';
+import { Routes, Route } from 'react-router-dom';
+import { Header } from './components/Dashboard/Header';
+import { AuthPage } from './components/Auth/AuthPage';
+import { Dashboard } from './components/Dashboard/Dashboard';
+import { ProtectedRoute } from './components/Auth/ProtectedRoute';
+import { PoolPage } from './components/Pool/PoolPage';
+import ProfilePage from './components/Profile/ProfilePage';
+import JoinPool from './components/Pool/JoinPool';
 
-const App = () => {
-    return (
-        <Auth0Provider
-            domain={process.env?.REACT_APP_DOMAIN || ''}
-            clientId={process.env?.REACT_APP_CLIENTID || ''}
-            redirectUri={window.location.origin}
-        >
-            <Router>
-                <Switch>
-                    <Route path="/" component={LandingPage} />
-                </Switch>
-            </Router>
-        </Auth0Provider>
-    );
-};
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <Routes>
+      <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/pool/view/:poolId"
+          element={
+            <ProtectedRoute>
+              <PoolPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pool/join/:poolId"
+          element={
+            <ProtectedRoute>
+              <JoinPool />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
 
 export default App;
