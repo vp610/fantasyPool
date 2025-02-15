@@ -10,7 +10,7 @@ def create_app():
     app.config.from_object(Config)
     cache.init_app(app, config={
         'CACHE_TYPE': 'RedisCache',
-        'CACHE_REDIS_URL': 'redis://localhost:6379/0'
+        'CACHE_REDIS_URL': app.config['CACHE_REDIS_URL']
     })
     CORS(app, supports_credentials=True)
 
@@ -37,7 +37,7 @@ def create_app():
         # Schedule jobs with context-aware wrappers
         # update_match_data(supabase)
         # scheduler.add_job(func=lambda: job_wrapper(initialize_teams_and_players), trigger="interval", seconds=10)
-        # scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", seconds=100)
+        scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", min=20)
 
         scheduler.start()
         print("Scheduler started")  # Confirm job addition

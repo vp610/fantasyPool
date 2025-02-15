@@ -19,3 +19,4 @@ class Config:
 
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+    CACHE_REDIS_URL = os.getenv('CACHE_REDIS_URL')
