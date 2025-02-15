@@ -41,6 +41,10 @@ def get_tournaments(authId):
 def get_user_pools(authId):
     try:
         user = supabase.table('users').select('id').eq('authId', authId).execute()
+        if not user.data:
+            print(user)
+            return jsonify({"error": "User not found"}), 404
+
         userId = user.data[0]['id']
         response = supabase.from_('userPools') \
             .select('pools(*)') \
