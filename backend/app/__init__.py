@@ -37,7 +37,7 @@ def create_app():
         # Schedule jobs with context-aware wrappers
         # update_match_data(supabase)
         # scheduler.add_job(func=lambda: job_wrapper(initialize_teams_and_players), trigger="interval", seconds=10)
-        scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", min=20)
+        scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", minutes=20)
 
         scheduler.start()
         print("Scheduler started")  # Confirm job addition
