@@ -1,54 +1,46 @@
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, current_app, request
 import requests
 from app.utility.headers import get_headers
 from supabase import create_client, Client
 from config import Config
 
-api = Blueprint('api', __name__)
+general_api = Blueprint('general_api', __name__)
 
 # Initialize Supabase client
 supabase: Client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
 
-@api.route('/users', methods=['GET'])
+@general_api.route('/users', methods=['GET'])
 def get_users():
     response = supabase.table('users').select('*').execute()
     return jsonify(response.data)
 
-@api.route('/players', methods=['GET'])
+@general_api.route('/players', methods=['GET'])
 def get_players():
     response = supabase.table('players').select('*').execute()
     return jsonify(response.data)
 
-@api.route('/pools', methods=['GET'])
+@general_api.route('/pools', methods=['GET'])
 def get_pools():
     response = supabase.table('pools').select('*').execute()
     return jsonify(response.data)
 
-@api.route('/teams', methods=['GET'])
+@general_api.route('/teams', methods=['GET'])
 def get_teams():
     response = supabase.table('teams').select('*').execute()
     return jsonify(response.data)
 
-#########################################################################################
-################################## ENDPOINTS TO API #####################################
-#########################################################################################
-
+# Additional functions for fetching teams and players
 def fetch_teams():
     api_url = f"{current_app.config['ENDPOINT_URL']}/teams/v1/international"
     response = requests.get(api_url, headers=get_headers())
-
-    # if response.status_code == 200:
     data = response.json()
     return data
-    # else:
-    #     return jsonify({"error": "Failed to fetch teams"}), 400
 
 def fetch_players_to_db(supabase_service):
     teams = get_teams()
     for team in teams:
         api_url = f"{current_app.config['ENDPOINT_URL']}/teams/v1/{team['teamId']}/players"
         response = requests.get(api_url, headers=get_headers())
-
         if response.status_code == 200:
             data = response.json()
             for player in data["player"]:

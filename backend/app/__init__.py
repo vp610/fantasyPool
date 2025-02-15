@@ -2,10 +2,17 @@ from flask import Flask
 from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 from supabase import create_client, Client
+from flask_cors import CORS
+from app.cacheModule import cache
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    cache.init_app(app, config={
+        'CACHE_TYPE': 'RedisCache',
+        'CACHE_REDIS_URL': 'redis://localhost:6379/0'
+    })
+    CORS(app, supports_credentials=True)
 
     print("App created!")  # Confirm app creation
 
@@ -28,8 +35,9 @@ def create_app():
                 func(supabase)
 
         # Schedule jobs with context-aware wrappers
-        scheduler.add_job(func=lambda: job_wrapper(initialize_teams_and_players), trigger="interval", seconds=10)
-        scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", seconds=100)
+        # update_match_data(supabase)
+        # scheduler.add_job(func=lambda: job_wrapper(initialize_teams_and_players), trigger="interval", seconds=10)
+        # scheduler.add_job(func=lambda: job_wrapper(update_match_data), trigger="interval", seconds=100)
 
         scheduler.start()
         print("Scheduler started")  # Confirm job addition
