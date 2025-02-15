@@ -1,1 +1,1 @@
-# cricket-pool
+# FantasyPool
