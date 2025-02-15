@@ -1,48 +1,63 @@
+export interface Sport {
+    id: string;
+    name: string;
+    createdAt: string;
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  sportId: string;
+  startDate: string;
+  endDate: string;
+  status: boolean;
+  createdAt: string;
+}
+
 export interface User {
     id: string;
-    auth_id: string;
+    authId: string;
     username: string;
     email: string;
-    points: number;
-    image: string;
+    createdAt: string;
   }
   
   export interface Pool {
     id: string;
     name: string;
-    status: 'upcoming' | 'active' | 'completed';
     startDate: string;
     endDate: string;
     participants: number;
+    tournamentId: string;
     winner: string | null;
+    status: boolean;
+    createdAt: string;
   }
   
   export interface Team {
-    id: number;
+    id: string;
     name: string;
+    sportId: string
     teamId: number;
-    totalGames: number;
-    totalWins: number;
+    createdAt: string;
   }
 
   export interface Player {
-    id: number;
-    teamId: number;
+    id: string;
+    teamId: string;
     playerId: number;
+    sportId: string;
     name: string;
     role: string;
-    numFifties: number;
-    numHundreds: number;
-    threeWickets: number;
-    fiveWickets: number;
+    createdAt: string;
   }
 
   export interface User {
     id: string;
-    auth_id: string;
+    authId: string;
     username: string;
     email: string;
-    image: string;
+    createdAt: string;
   }
 
   export interface UserSelection {
@@ -55,4 +70,39 @@ export interface User {
     userId: string;
     poolId: string;
     points: number; 
+  }
+
+  /* Pool Page Interfaces */
+
+  export interface PlayerStats {
+    createdAt: string;
+    fifties?: number;
+    hundreds?: number;
+    threeWickets?: number;
+    fiveWickets?: number;
+    id: string;
+    playerStatsId: string;
+  }
+
+  export interface TeamStats {
+    createdAt: string;
+    id: string;
+    teamId: string;
+    tournamentId: string;
+    totalGames: number;
+    totalDraws: number;
+    totalWins: number;
+    totalLosses: number;
+  }
+  
+  export interface StandingTeam {
+    team: Team;
+    teamStats: TeamStats;
+    score: number;
+  }
+
+  export interface StandingPlayer {
+    player: Player;
+    playerStats: PlayerStats;
+    score: number;
   }

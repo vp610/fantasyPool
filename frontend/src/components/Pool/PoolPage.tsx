@@ -1,65 +1,99 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-// import { Player, Team, UserSelection } from '../../types';
-import { Player, Team, User } from '../../types';
-import { dummyUsers } from '../../data/users';
+import { Player, Team, User, PlayerStats, TeamStats, StandingTeam, StandingPlayer } from '../../types';
 import { useAuth0 } from '@auth0/auth0-react';
 import { RootState } from '../../store/store';
 import { gradients } from '../../constants/constants';
+import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
 
-interface UserSelection {
-  teams: string[];
-  players: string[];
-}
+type Standing = {
+  user: User;
+  score: number;
+  players: StandingPlayer[];
+  teams: StandingTeam[];
+};
+
+const Loader: React.FC = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen">
+    <svg
+      className="animate-spin -ml-1 mr-3 h-10 w-10 text-gray-700"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      ></path>
+    </svg>
+    <p className="text-xl font-semibold text-gray-700">Loading...</p>
+  </div>
+);
 
 export const PoolPage: React.FC = () => {
   const { poolId } = useParams<{ poolId: string }>();
-  const { user, isAuthenticated } = useAuth0();
-  const [standings, setStandings] = useState<User[]>([]);
+  const { user } = useAuth();
+  const [standings, setStandings] = useState<Standing[] | null>(null);
   // const [userSelection, setUserSelection] = useState<UserSelection | null>(null);
+  const [players, setPlayers] = useState<StandingPlayer[]>([]);
+  const [teams, setTeams] = useState<StandingTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const gradientIndex = useSelector((state: RootState) => state.color.gradientIndex);
 
   useEffect(() => {
     const fetchPoolData = async () => {
+      if (!user?.id) {
+        // setError("User ID is missing. Please log in again.");
+        return;
+      }
       try {
-        // Fetch standings
-        // const standingsResponse = await fetch(`/api/pools/${poolId}/standings`);
-        // if (!standingsResponse.ok) {
-        //   throw new Error('Failed to fetch standings');
-        // }
-        // const standingsData = await standingsResponse.json();
-        // setStandings(standingsData);
+        const standingsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/pool/standings/${poolId}`);
+        // const selectionResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/pool/user-selection/${user.id}/${poolId}`);
 
-        // Fetch user selection
-        // const userSelectionResponse = await fetch(`/api/pools/${poolId}/user-selection/${user.sub}`);
-        // if (!userSelectionResponse.ok) {
-        //   throw new Error('Failed to fetch user selection');
-        // }
-        // const userSelectionData = await userSelectionResponse.json();
-        // setUserSelection(userSelectionData);
+        const standingsData: Standing[] = standingsResponse.data;
+        setStandings(standingsData);
 
-        setTimeout(() => {
-          setStandings(dummyUsers);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
+        const userStanding = standingsData.find(
+          (standing) => user.id === standing.user.authId
+        );
+
+        if (userStanding) {
+          setPlayers(userStanding.players);
+          setTeams(userStanding.teams);
         } else {
-          setError(String(error));
+          setPlayers([]);
+          setTeams([]);
+        }
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response) {
+          const errorData = err.response.data;
+          setError(typeof errorData === 'object' ? JSON.stringify(errorData) : errorData);
+        } else {
+          setError('Error fetching pool data');
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPoolData();
-  }, [poolId]);
+    if (user){
+      fetchPoolData();
+    }  
+  }, [poolId, user]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader />;
   if (error) return <div>Error: {error}</div>;
 
   const getEmoji = (index: number) => {
@@ -89,9 +123,9 @@ export const PoolPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {standings.map((user, index) => (
+              {standings?.map((standing, index) => (
                 <tr
-                  key={user.id}
+                  key={standing.user.id}
                   className={`hover:bg-gray-100 transition-colors duration-200 slide-in`}
                 >
                   <td className="py-3 px-4 border-b border-gray-200 flex items-center">
@@ -99,13 +133,13 @@ export const PoolPage: React.FC = () => {
                       <span className="animate-bounce mr-2">{getEmoji(index)}</span>
                     )}
                     <img
-                      src={user.image}
-                      alt={user.username}
+                      // src={user.image}
+                      alt={standing.user.username}
                       className="w-8 h-8 rounded-full mr-2"
                     />
-                    {user.username}
+                    {standing.user.username}
                   </td>
-                  <td className="py-3 px-4 border-b border-gray-200">{user.points}</td>
+                  <td className="py-3 px-4 border-b border-gray-200">{standing.score}</td>
                 </tr>
               ))}
             </tbody>
@@ -113,28 +147,28 @@ export const PoolPage: React.FC = () => {
         </div>
         <div>
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Your Selection</h2>
-          {/* {userSelection ? (
+          {(players.length > 0 || teams.length > 0) ? (
             <div>
               <h3 className="text-xl font-bold text-gray-800">Teams</h3>
               <ul className="mb-4">
-                {userSelection.teams.map((team) => (
-                  <li key={team.id} className="py-2 px-4 border-b">
-                    {team.name} - {team.points} points
+                {teams.map((teamObj) => (
+                  <li key={teamObj.team.id} className="py-2 px-4 border-b">
+                    {teamObj.team.name} - {teamObj.score} points
                   </li>
                 ))}
               </ul>
               <h3 className="text-xl font-bold text-gray-800">Players</h3>
               <ul>
-                {userSelection.players.map((player) => (
-                  <li key={player.id} className="py-2 px-4 border-b">
-                    {player.name} - {player.points} points
+                {players.map((playerObj) => (
+                  <li key={playerObj.player.id} className="py-2 px-4 border-b">
+                    {playerObj.player.name} - {playerObj.score} points
                   </li>
                 ))}
               </ul>
             </div>
           ) : (
             <div>No selection found</div>
-          )} */}
+          )}
         </div>
       </div>
     </div>

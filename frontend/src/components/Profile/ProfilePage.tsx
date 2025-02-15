@@ -1,37 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../../types';
-import { dummyUsers } from '../../data/users';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const ProfilePage: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { authId } = useParams<{ authId: string }>();
   const [user, setUser] = useState<User>(); // Replace with actual user data
   const [name, setName] = useState('');
   const [image, setImage] = useState('');
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!authId) {
+      setError('authId is undefined');
+      return;
+    }
     // Fetch user data from the backend
-    // const fetchUser = async () => {
-    //   const response = await fetch(`/api/users/${userId}`);
-    //   if (!response.ok) {
-    //     throw new Error('Failed to fetch user');
-    //   }
-    //   const userData = await response.json();
-    //   setUser(userData);
-    // };
-    // fetchUser();
-
-    // Simulate successful fetch
-    setTimeout(() => {
-      const fetchedUser = dummyUsers[0];
-      setUser(fetchedUser);
-      setName(fetchedUser.username);
-      setImage(fetchedUser.image);
-    }, 1000);
-  }, [ userId ]);
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/profile/${authId}`);
+        setUser(response.data);
+      } catch (err) {
+          if (axios.isAxiosError(err as any) && (err as any).response) {
+            setError((err as any).response.data);
+          } else {
+            setError('Error fetching user');
+          }
+      }
+    };
+    fetchUser();
+  }, [ authId ]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -56,25 +57,28 @@ const ProfilePage: React.FC = () => {
 
     try {
       // Update user data in the backend
-      // const response = await fetch('/api/update-profile', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ id: user.id, username: name, image }),
-      // });
-      // if (!response.ok) {
-      //   throw new Error('Failed to update profile');
-      // }
-      // const updatedUser = await response.json();
-      // setUser(updatedUser);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/profile/update/${user?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: name }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      const updatedUser = await response.json();
+      setUser(updatedUser);
 
       // Simulate successful update
       setTimeout(() => {
         if (user) {
-          setUser({ ...user, username: name, image });
+          setUser({ ...user, username: name });
         }
         setLoading(false);
+      }, 1000);
+      setTimeout(() => {
+        navigate(`/`);
       }, 1000);
     } catch (error) {
       if (error instanceof Error) {
@@ -98,7 +102,8 @@ const ProfilePage: React.FC = () => {
             <input
               type="text"
               id="name"
-              value={name}
+              defaultValue={user?.username}
+              
               onChange={handleNameChange}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
@@ -132,13 +137,17 @@ const ProfilePage: React.FC = () => {
           </div>
           {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
           <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:shadow-outline"
-              disabled={loading}
-            >
-              {loading ? 'Updating...' : 'Update Profile'}
-            </button>
+            <a
+              href="/"
+              className="text-sm text-gray-600 hover:underline"
+              >
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:shadow-outline"
+                  disabled={loading}
+                >{loading ? 'Updating...' : 'Update Profile'}
+                </button>
+            </a>
           </div>
         </form>
       </div>

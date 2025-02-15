@@ -1,17 +1,46 @@
-import React from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { useState } from 'react';
+import { supabase } from '../../db/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus } from 'lucide-react';
 
 export function AuthPage() {
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  React.useEffect(() => {
-    if (isAuthenticated) {
+  const handleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+    } else {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  };
+
+  const handleSignUp = async () => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setError(error.message);
+    } else {
+      navigate('/');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+      }
+      if (user && user.id) {
+        navigate(`/profile/${user.id}`);
+      } else {
+        console.error("User ID is null or undefined");
+      }      
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+    if (error) {
+      setError(error.message);
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
@@ -26,13 +55,39 @@ export function AuthPage() {
         </div>
 
         <div className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
+          />
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
-            onClick={() => loginWithRedirect({ screen_hint: 'login' })}
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={handleSignIn}
+            className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
           >
-            <LogIn className="w-5 h-5 mr-2" />
-            Sign in
+            Sign In
           </button>
+          <button
+            onClick={handleSignUp}
+            className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
+          >
+            Sign Up
+          </button>
+          {/* <button
+            onClick={handleGoogleSignIn}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Sign in with Google
+          </button> */}
         </div>
       </div>
     </div>

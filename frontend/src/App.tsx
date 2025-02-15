@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { PoolPage } from './components/Pool/PoolPage';
 import ProfilePage from './components/Profile/ProfilePage';
 import JoinPool from './components/Pool/JoinPool';
+import { TournamentPage } from './components/Tournament/TournamentPage';
 
 function App() {
   return (
@@ -22,6 +23,14 @@ function App() {
           }
         />
         <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/tournament/:tournamentId"
+          element={
+            <ProtectedRoute>
+              <TournamentPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/pool/view/:poolId"
           element={
@@ -39,7 +48,7 @@ function App() {
           }
         />
         <Route
-          path="/profile/:userId"
+          path="/profile/:authId"
           element={
             <ProtectedRoute>
               <ProfilePage />
