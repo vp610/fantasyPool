@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../../types';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser, FaEnvelope, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 const ProfilePage: React.FC = () => {
-const { user } = useAuth();
-  const [userData, setUserData] = useState<User>(); // Replace with actual user data
+  const { user } = useAuth();
+  const [userData, setUserData] = useState<User | null>(null); // Updated to handle loading state
   const [name, setName] = useState('');
-  const [image, setImage] = useState('');
-  const navigate = useNavigate();
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user?.id) {
@@ -80,6 +78,13 @@ const { user } = useAuth();
 
   return (
     <div className="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen py-8 text-gray-800">
+      {!userData ? (
+        <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-100 bg-opacity-75 z-50">
+          <FaSpinner className="animate-spin text-4xl text-blue-500 mb-4" />
+          {/* <p className="text-xl text-gray-700">Loading...</p> */}
+        </div>
+      ) : null}
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
           <h2 className="text-3xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -94,26 +99,13 @@ const { user } = useAuth();
               <input
                 type="text"
                 id="name"
-                defaultValue={userData?.username}
+                value={name}
                 onChange={handleNameChange}
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder={userData?.username || 'Loading...'}
+                disabled={!userData}
               />
             </div>
-            {/* <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="image">
-                Profile Picture
-              </label>
-              <input
-                type="file"
-                id="image"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-              {image && (
-                <img src={image} alt="Profile" className="mt-4 w-32 h-32 rounded-full object-cover" />
-              )}
-            </div> */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
                 Email
@@ -123,7 +115,7 @@ const { user } = useAuth();
                 <input
                   type="email"
                   id="email"
-                  value={userData?.email}
+                  value={userData?.email || 'Loading...'}
                   readOnly
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100 cursor-not-allowed"
                 />
@@ -134,7 +126,7 @@ const { user } = useAuth();
               <button
                 type="submit"
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:shadow-outline"
-                disabled={loading}
+                disabled={loading || !userData}
               >
                 {loading ? (
                   <div className="flex items-center">

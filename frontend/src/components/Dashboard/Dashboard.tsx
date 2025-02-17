@@ -102,7 +102,7 @@ export function Dashboard() {
       {globalLoading && (
         <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-100 bg-opacity-75 z-50">
           <FaSpinner className="animate-spin text-4xl text-blue-500 mb-4" />
-          <p className="text-xl text-gray-700">Loading...</p>
+          {/* <p className="text-xl text-gray-700">Loading...</p> */}
         </div>
       )}
       <div className="container mx-auto px-4 py-8">
