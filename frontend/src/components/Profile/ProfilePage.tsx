@@ -6,9 +6,8 @@ import { FaUser, FaEnvelope, FaSpinner } from 'react-icons/fa';
 
 const ProfilePage: React.FC = () => {
     const { authId } = useParams<{ authId: string }>();
-    const [user, setUser] = useState<User>();
-    const [name, setName] = useState('');
-    const [image, setImage] = useState('');
+    const [user, setUser] = useState<User | null>(null);  // Ensure it's null initially
+    const [name, setName] = useState<string>('');  // Keep name initialized as an empty string
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
@@ -24,6 +23,7 @@ const ProfilePage: React.FC = () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/profile/${authId}`);
                 setUser(response.data);
+                setName(response.data.username);  // Set name after fetching user
             } catch (err) {
                 if (axios.isAxiosError(err as any) && (err as any).response) {
                     setError((err as any).response.data);
@@ -38,18 +38,6 @@ const ProfilePage: React.FC = () => {
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setName(e.target.value);
-    };
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target && event.target.result) {
-                    setImage(event.target.result as string);
-                }
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -106,7 +94,7 @@ const ProfilePage: React.FC = () => {
                             <input
                                 type="text"
                                 id="name"
-                                defaultValue={user?.username}
+                                value={user ? name : ''}  // Ensure value is always defined
                                 onChange={handleNameChange}
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             />
@@ -120,7 +108,7 @@ const ProfilePage: React.FC = () => {
                                 <input
                                     type="email"
                                     id="email"
-                                    value={user?.email}
+                                    value={user?.email || ''}
                                     readOnly
                                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100 cursor-not-allowed"
                                 />
