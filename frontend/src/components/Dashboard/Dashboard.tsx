@@ -102,7 +102,6 @@ export function Dashboard() {
       {globalLoading && (
         <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-100 bg-opacity-75 z-50">
           <FaSpinner className="animate-spin text-4xl text-blue-500 mb-4" />
-          {/* <p className="text-xl text-gray-700">Loading...</p> */}
         </div>
       )}
       <div className="container mx-auto px-4 py-8">
@@ -126,18 +125,20 @@ export function Dashboard() {
               Your Active Pools
             </h2>
             <div className="space-y-4">
-              {!globalLoading && userPools.length > 0 ? (
-                userPools.map(pool => (
-                  <PoolCard
-                    key={pool.id}
-                    pool={pool}
-                    onView={handleViewPool}
-                    onDelete={handleDelete}
-                  />
-                ))
-              ) : !globalLoading ? (
-                <p className="text-gray-600">You are not part of any pools yet.</p>
-              ) : null}
+              <div className={`transition-opacity duration-500 ${userPools.length > 0 ? 'opacity-100' : 'opacity-0'}`}>
+                {!globalLoading && userPools.length > 0 ? (
+                  userPools.map(pool => (
+                    <PoolCard
+                      key={pool.id}
+                      pool={pool}
+                      onView={handleViewPool}
+                      onDelete={handleDelete}
+                    />
+                  ))
+                ) : !globalLoading ? (
+                  <p className="text-gray-600">You are not part of any pools yet.</p>
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -161,21 +162,23 @@ export function Dashboard() {
               </select>
             </div>
             <div className="space-y-4">
-              {!globalLoading && filteredTournaments.length > 0 ? (
-                filteredTournaments.map(tournament => (
-                  <div
-                    key={tournament.id}
-                    className="bg-gray-50 hover:bg-gray-100 rounded-md shadow-md p-4 cursor-pointer transition-colors duration-300"
-                    onClick={() => handleViewTournament(tournament.id)}
-                  >
-                    <h3 className="text-xl font-bold text-gray-800">{tournament.name}</h3>
-                    <p className="text-gray-500">Starts: {new Date(tournament.startDate).toLocaleDateString()}</p>
-                    <p className="text-gray-500">Ends: {new Date(tournament.endDate).toLocaleDateString()}</p>
-                  </div>
-                ))
-              ) : !globalLoading ? (
-                <p className="text-gray-600">No tournaments available for the selected sport.</p>
-              ) : null}
+              <div className={`transition-opacity duration-500 ${filteredTournaments.length > 0 ? 'opacity-100' : 'opacity-0'}`}>
+                {!globalLoading && filteredTournaments.length > 0 ? (
+                  filteredTournaments.map(tournament => (
+                    <div
+                      key={tournament.id}
+                      className="bg-gray-50 hover:bg-gray-100 rounded-md shadow-md p-4 cursor-pointer transition-colors duration-300"
+                      onClick={() => handleViewTournament(tournament.id)}
+                    >
+                      <h3 className="text-xl font-bold text-gray-800">{tournament.name}</h3>
+                      <p className="text-gray-500">Starts: {new Date(tournament.startDate).toLocaleDateString()}</p>
+                      <p className="text-gray-500">Ends: {new Date(tournament.endDate).toLocaleDateString()}</p>
+                    </div>
+                  ))
+                ) : !globalLoading ? (
+                  <p className="text-gray-600">No tournaments available for the selected sport.</p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
