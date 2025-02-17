@@ -92,7 +92,7 @@ export const PoolPage: React.FC = () => {
                         </h2>
                         <div className="bg-white rounded-md shadow-md overflow-hidden">
                             <table className="min-w-full">
-                                <thead className="bg-gradient-to-r from-gray-800 to-gray-600 text-gray-100 shadow-md text-gray-700">
+                                <thead className="bg-gradient-to-r from-gray-800 to-gray-600 text-gray-100 shadow-md">
                                     <tr>
                                         <th className="py-3 px-4 text-left text-sm font-semibold">Player</th>
                                         <th className="py-3 px-4 text-left text-sm font-semibold">Points</th>
