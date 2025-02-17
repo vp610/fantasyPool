@@ -1,7 +1,7 @@
 export const countryFlags: { [key: string]: string } = {
     "India": "🇮🇳",
     "Australia": "🇦🇺",
-    "England": "🏴",
+    "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
     "South Africa": "🇿🇦",
     "New Zealand": "🇳🇿",
     "Pakistan": "🇵🇰",
