@@ -55,16 +55,14 @@ export function Header() {
                                     Home
                                 </a>
                             </li>
-                            {user && (
-                                <li>
-                                    <a
-                                        href={`/profile/${user.id}`}
-                                        className="hover:text-gray-300 transition duration-300 ease-in-out transform hover:scale-110"
-                                    >
-                                        Profile
-                                    </a>
-                                </li>
-                            )}
+                            <li>
+                                <a
+                                    href={`/profile`}
+                                    className="hover:text-gray-300 transition duration-300 ease-in-out transform hover:scale-110"
+                                >
+                                    Profile
+                                </a>
+                            </li>
                             <li>
                                 <button
                                     onClick={handleLogout}

@@ -62,7 +62,7 @@ export function AuthPage() {
           navigate('/auth');
         }
         if (user && user.id) {
-          navigate(`/profile/${user.id}`);
+          navigate(`/profile`);
         } else {
           console.error("User ID is null or undefined");
         }
