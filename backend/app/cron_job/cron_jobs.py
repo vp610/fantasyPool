@@ -135,6 +135,7 @@ def process_series_match(supabase: Client, series_match):
         seriesId = seriesInfo.get("seriesId")
         if seriesId != 9325:
             return
+        print(f"Processing series {seriesId}")
         supabase_response = supabase.table("tournaments").select("id").eq("seriesId", seriesId).execute()
         if supabase_response:
             tournament_id = supabase_response.data[0]["id"]

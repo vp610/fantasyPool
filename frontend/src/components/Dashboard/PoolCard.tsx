@@ -21,12 +21,15 @@ export const PoolCard: React.FC<PoolCardProps> = ({ pool, onView, onDelete }) =>
                 >
                     View
                 </button>
-                <button
-                    onClick={() => onDelete(pool.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
-                >
-                    Remove
-                </button>
+                {pool.endDate < new Date().toISOString() ? (
+                    <button
+                        onClick={() => onDelete(pool.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
+                    >
+                        Remove
+                    </button>
+                ) : <></>}
+                
             </div>
         </div>
     );

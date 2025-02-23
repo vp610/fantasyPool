@@ -3,15 +3,10 @@ from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 from supabase import create_client, Client
 from flask_cors import CORS
-from app.cacheModule import cache
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    cache.init_app(app, config={
-        'CACHE_TYPE': 'RedisCache',
-        'CACHE_REDIS_URL': app.config['CACHE_REDIS_URL']
-    })
     CORS(app, supports_credentials=True)
 
     print("App created!")  # Confirm app creation

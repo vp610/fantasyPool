@@ -2,7 +2,6 @@ from flask import Blueprint, jsonify, request
 from flask_cors import cross_origin
 from supabase import create_client, Client
 from config import Config
-from app.cacheModule import cache  # Global cache instance
 
 pool_api = Blueprint('pool_api', __name__)
 
@@ -27,7 +26,6 @@ def delete_pool(poolId, authId):
 
 
 @pool_api.route('/teams/<poolId>', methods=['GET'])
-@cache.cached(timeout=900, query_string=True)
 def get_all_teams(poolId):
     try:
         # Get the tournamentId from the pool
@@ -64,7 +62,6 @@ def get_all_teams(poolId):
         return jsonify({"error": str(e)}), 500
 
 @pool_api.route('/players/<poolId>', methods=['GET'])
-@cache.cached(timeout=900, query_string=True)
 def get_all_players(poolId):
     try:
         # Get tournamentId from pool
@@ -120,7 +117,6 @@ def get_all_players(poolId):
 
 @pool_api.route('/user-selection', methods=['POST'])
 @cross_origin() 
-@cache.cached(timeout=900, query_string=True) 
 def post_save_user_selection():
     # print("post_save_user_selection")
     try:
@@ -165,7 +161,6 @@ def post_save_user_selection():
  
 
 @pool_api.route('/standings/<poolId>', methods=['GET'])
-@cache.cached(timeout=900, query_string=True)
 def get_standings(poolId):
     try:
         # Get tournamentId
