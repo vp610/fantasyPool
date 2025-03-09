@@ -25,6 +25,12 @@ export const PoolPage: React.FC = () => {
     const [expandedUser, setExpandedUser] = useState<string | null>(null);
     const gradientIndex = useSelector((state: RootState) => state.color.gradientIndex);
 
+     const topThreeScores = standings
+     ? Array.from(new Set(standings.map((s) => s.score)))
+         .sort((a, b) => b - a)
+         .slice(0, 3)
+     : [];
+
     useEffect(() => {
         const fetchPoolData = async () => {
             if (!user?.id) return;
@@ -63,13 +69,12 @@ export const PoolPage: React.FC = () => {
     
     if (error) return <div className="text-red-500 text-center mt-4">Error: {error}</div>;
 
-    const getEmoji = (index: number) => {
-        switch (index) {
-            case 0: return '🥇'; // Gold medal for first
-            case 1: return '🥈'; // Silver medal for second
-            case 2: return '🥉'; // Bronze medal for third
-            default: return '';
-        }
+    const getMedal = (score: number) => {
+        if (!topThreeScores.length) return '';
+        if (score === topThreeScores[0]) return '🥇';
+        if (topThreeScores.length > 1 && score === topThreeScores[1]) return '🥈';
+        if (topThreeScores.length > 2 && score === topThreeScores[2]) return '🥉';
+        return '';
     };
 
     const toggleUserExpansion = (userId: string) => {
@@ -138,68 +143,65 @@ export const PoolPage: React.FC = () => {
                         <tbody>
                             {standings?.map((standing, index) => (
                                 <React.Fragment key={standing.user.id}>
-                                    <motion.tr 
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className={`border-b ${standing.user.id === user?.id ? 'bg-blue-50' : ''}`}
+                                <motion.tr
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className={`border-b ${standing.user.id === user?.id ? 'bg-blue-50' : ''}`}
                                     >
-                                        {/* Display emoji for top 3 users */}
-                                        <td className="py-3 px-4 flex items-center">
-                                            {index < 3 && (
-                                                <span className="mr-2 text-xl">{getEmoji(index)}</span>
-                                            )}
-                                            {standing.user.username}
-                                        </td>
-                                        <td className="py-3 px-4 text-right font-bold text-blue-600">{standing.score}</td>
-                                        {/* Expandable details button */}
-                                        <td className="py-3 px-4 text-center">
-                                            <button 
-                                                onClick={() => toggleUserExpansion(standing.user.id)}
-                                                className="text-blue-500 hover:text-blue-700"
-                                            >
-                                                {expandedUser === standing.user.id ? <FaChevronUp /> : <FaChevronDown />}
-                                            </button>
-                                        </td>
-                                    </motion.tr>
-
-                                    {/* Expandable details */}
-                                    {expandedUser === standing.user.id && (
-                                        <motion.tr
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                        >
-                                            <td colSpan={3} className="py-4 px-6 bg-gray-50">
-                                                {/* Teams and Players Details */}
-                                                <div className="grid md:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2 text-gray-700">Teams</h4>
-                                                        <ul className="space-y-2">
-                                                            {standing.teams.map((teamObj) => (
-                                                                <li key={teamObj.team.id} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
-                                                                    <span>{teamObj.team.name}</span>
-                                                                    <span className="font-semibold text-green-600">{teamObj.score} points</span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2 text-gray-700">Players</h4>
-                                                        <ul className="space-y-2">
-                                                            {standing.players.map((playerObj) => (
-                                                                <li key={playerObj.player.id} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
-                                                                    <span>{playerObj.player.name}</span>
-                                                                    <span className="font-semibold text-green-600">{playerObj.score} points</span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </motion.tr>
+                                    <td className="py-3 px-4 flex items-center">
+                                    {getMedal(standing.score) && (
+                                        <span className="mr-2 text-xl">{getMedal(standing.score)}</span>
                                     )}
-                                </React.Fragment> 
+                                    {standing.user.username}
+                                    </td>
+                                    <td className="py-3 px-4 text-right font-bold text-blue-600">{standing.score}</td>
+                                    <td className="py-3 px-4 text-center">
+                                    <button
+                                        onClick={() => toggleUserExpansion(standing.user.id)}
+                                        className="text-blue-500 hover:text-blue-700"
+                                    >
+                                        {expandedUser === standing.user.id ? <FaChevronUp /> : <FaChevronDown />}
+                                    </button>
+                                    </td>
+                                </motion.tr>
+
+                                {expandedUser === standing.user.id && (
+                                    <motion.tr
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    >
+                                    <td colSpan={3} className="py-4 px-6 bg-gray-50">
+                                        {/* Teams and Players Details */}
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h4 className="font-semibold mb-2 text-gray-700">Teams</h4>
+                                            <ul className="space-y-2">
+                                            {standing.teams.map((teamObj) => (
+                                                <li key={teamObj.team.id} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
+                                                <span>{teamObj.team.name}</span>
+                                                <span className="font-semibold text-green-600">{teamObj.score} points</span>
+                                                </li>
+                                            ))}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2 text-gray-700">Players</h4>
+                                            <ul className="space-y-2">
+                                            {standing.players.map((playerObj) => (
+                                                <li key={playerObj.player.id} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
+                                                <span>{playerObj.player.name}</span>
+                                                <span className="font-semibold text-green-600">{playerObj.score} points</span>
+                                                </li>
+                                            ))}
+                                            </ul>
+                                        </div>
+                                        </div>
+                                    </td>
+                                    </motion.tr>
+                                )}
+                            </React.Fragment>
                             ))}
                         </tbody> 
                     </table> 
